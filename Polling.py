@@ -12,20 +12,43 @@ class Polling():
         self.globalChitList = self.buildGlobalChitList()
         self.globalBlockList = self.buildGlobalBlockList()
 
-        for block in self.globalChitList[0]:
+
+
+
+        for block in self.globalBlockList[0]:
             print(block)
 
-    # def getOpenBlock(self):
-    #     for i in self.user1List:
-    #         checkDay = i.getDay()
-    #         checkDate = i.getDate()
-    #         checkTimeStart = i.getTimeStart()
-    #         for j in self.user2List:
-    #             if(j.getDay()== checkDay):
-    #                 if(j.getDate()==checkDate):
-    #                     if(j.getTimeStart() == checkTimeStart):
-    #                         return "Best Slot Offer: " + str(i)
-    #     return "No Compatible Slot"
+    def getOpenBlock(self):
+        #for block in globalBlockList[0]:
+            #result = self.matchExists(block)
+            #if result == True:
+                #match = True
+                #break
+        #if result == False:
+            #return "No Compatible Block"
+        #else:
+            #print(block)
+            #return block
+
+        return "No Compatible Slot"
+
+    def matchExists(self, blockLocationInGlobalBlockList):
+        #block = blockLocationInGlobalBlockList
+        #listLength = 0
+        #if another list exists:
+            #for compBlock in list:
+                #length += 1
+                #if block matches compBlock:
+                    #matchExists(compBlock)
+                #elif length <= nextList:
+                    #return false
+        #else:
+            #if block matches compBlock:
+                #result = True
+            #else:
+                #result = false
+        #return result
+        return None
 
 
     def populateUsersList(self):
@@ -48,6 +71,18 @@ class Polling():
 
         return usersList
 
+    def sortChits(self, chitArray):
+        for index in range(len(chitArray)):
+            for j in range(len(chitArray) - index - 1):
+                if chitArray[j].getStartTime() > chitArray[j+1].getStartTime():
+                    temp = chitArray[j]
+                    chitArray[j] = chitArray[j+1]
+                    chitArray[j+1] = temp
+
+
+        return chitArray
+
+
     def getMeetingLength(self):
         db = pymysql.connect(host = "us-cdbr-iron-east-05.cleardb.net", user = "b15bfd522a38aa", password = "d436c805", database = "heroku_66bd76f57e3f221")
         cursor = db.cursor()
@@ -55,6 +90,7 @@ class Polling():
         cursor.execute("SELECT meetingLength FROM meeting WHERE meetingID = %s", [self.meeting])
         lengthTuple = cursor.fetchone()
         length = int(lengthTuple[0])
+        print(length)
         db.commit()
         cursor.close()
         db.close()
@@ -64,30 +100,35 @@ class Polling():
     def buildBlockList(self, chitList):
         blockList = []
         sortedChitList = self.sortChits(chitList)
-
-        for index in range(len(sortedChitList) - 1):
-            currentChit = sortedChitList[index - 1]
-            nextChit = sortedChitList[index]
+        index = 0
+        nextIndex = 1
+        while nextIndex < len(sortedChitList):
+            currentChit = sortedChitList[index]
             miniSlotList = []
             miniSlotList.append(currentChit)
             blockLength = 1
             miniIndex = index
-            miniNextIndex = index + 1
-            while blockLength != self.length and blockLength != -1 and miniNextIndex >= len(sortedChitList):
+            miniNextIndex = nextIndex
+            while blockLength != self.length and miniNextIndex < len(sortedChitList):
+                print(blockLength)
                 if sortedChitList[miniIndex].getDate() == sortedChitList[miniNextIndex].getDate():
                     if sortedChitList[miniIndex].getEndTime() == sortedChitList[miniNextIndex].getStartTime():
-                        miniSlotList.append(nextChit)
+                        miniSlotList.append(sortedChitList[miniNextIndex])
                         blockLength += 1
                         miniIndex += 1
                         miniNextIndex +=1
-                else:
-                    blockLength = -1
+                    else:
+                        miniSlotList = [sortedChitList[miniNextIndex]]
+                        miniIndex += 1
+                        miniNextIndex += 1
+                        blockLength = 1
 
             if blockLength == self.length:
+                #print(miniSlotList)
                 tempBlock = Block(miniSlotList, self.length)
                 blockList.append(tempBlock)
-
-
+            index += 1
+            nextIndex += 1
 
         return blockList
 
@@ -99,16 +140,6 @@ class Polling():
 
         return globalBlockList
 
-    def sortChits(self, chitArray):
-        for index in range(len(chitArray)):
-            for j in range(len(chitArray) - index - 1):
-                if chitArray[j].getStartTime() > chitArray[j+1].getStartTime():
-                    temp = chitArray[j]
-                    chitArray[j] = chitArray[j+1]
-                    chitArray[j+1] = temp
-
-        return chitArray
-
     def buildAllChitList(self):
         tempAllChitList = []
         db = pymysql.connect(host="us-cdbr-iron-east-05.cleardb.net", user="b15bfd522a38aa", password="d436c805",
@@ -117,6 +148,8 @@ class Polling():
 
         cursor.execute("SELECT * FROM slot WHERE meetingID = %s", [self.meeting])
         allSlots = cursor.fetchall()
+
+
 
         for slot in allSlots:
             tempSlot = Slot(slot)

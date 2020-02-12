@@ -12,7 +12,7 @@ class Slot(object):
     def parseTimeString(self, unParsedString):
         timeString = unParsedString[0] + unParsedString[1] + unParsedString[3] + unParsedString[4]
         timeInt = int(timeString)
-        AMPMString = unParsedString[5] + unParsedString[6]
+        AMPMString = unParsedString[6] + unParsedString[7]
         if AMPMString == "pm":
             timeInt += 1200
 
